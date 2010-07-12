@@ -4,8 +4,8 @@
 		'savepath' => '/var/data/torrage.com/www/t/', // where .torrent's are stored
 	
 		'trackers' => array( // list of trackers that will always exist in torrent
-			'http://tracker.openbittorrent.com',
-			'udp://tracker.openbittorrent.com',
+			'http://tracker.openbittorrent.com/announce',
+			'udp://tracker.openbittorrent.com:80/announce',
 			'http://tracker.publicbt.com/announce',
 			'udp://tracker.publicbt.com:80/announce',
 			'http://denis.stalker.h3q.com:6969/announce',
