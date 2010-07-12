@@ -32,11 +32,16 @@
 	</ul>
 	
 	<h2>Donations</h2>
-	<p>We do not have any income or advertising on the site, instead we get the money it takes to run the service from the general public and other sites that uses our services for caching torrent files. If you like our service and want to contribute please contact donations@torrage.com</p>
+	<p>
+		We do not have any income or advertising on the site, instead we get the money it takes to run the service from the general public and other sites
+		that uses our services for caching torrent files. If you like our service and want to contribute please contact donations@torrage.com
+	</p>
 	
 	<h2>Setup your own torrent storage cache!</h2>
-	<p>The source code of torrage can be found <a href="/source/torrage-0.4.tar.bz2">here (v0.4)</a>. Completly revised code!</p>
+	<p>
+		The source code of torrage can be found <a href="/source/torrage-0.4.tar.bz2">here (v0.4)</a>. Completly revised code!<br />
 		You can also grab the source code via github here: <a href="http://github.com/torrage/Torrage" target="_blank">http://github.com/torrage/Torrage</a>
+	</p>
 	
 	<h2>I want automation / an API!</h2>
 	<p>Here's a list of our <a href="/automation.php">APIs</a>.</p>
