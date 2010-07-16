@@ -268,9 +268,14 @@
 	$trackers = merge_trackers( $trackers, $tr_add );
 	/* UDP tracker Loop - END */
 	
-	// Set the OBT trackers.
-	array_push( $trackers, 'udp://tracker.openbittorrent.com:80/announce' );
-	array_push( $trackers, 'http://tracker.openbittorrent.com/announce' );
+	// set our default trackers
+	if( count( $SETTINGS['trackers'] ) > 0 )
+	{
+		foreach( $SETTINGS['trackers'] as $tracker )
+		{
+			array_push( $trackers, $tracker );
+		}
+	}
 	$trackers = array_reverse( $trackers );
 	
 	/* Functions - Start */
