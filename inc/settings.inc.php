@@ -14,10 +14,19 @@
 		
 		'torrstoredns' => 'torrage.com', // used for link generation
 		
-		'synclists_enable' => true, // enable/disable sync files
-		'synclists_day' => true, // sync daily
-		'synclists_month' => true, // sync monthly
-		'synclists_path' => dirname( __FILE__ ) . '/../sync', // sync storage path
+		'sync' => array(
+			'enabled' => true, // enable/disable sync files
+			'day' => true, // sync daily
+			'month' => true, // sync monthly
+			'path' => dirname( __FILE__ ) . '/../sync', // sync storage path
+			'mirrors' => array(
+				// @todo: possibly live scan domains to ip and cache?
+				array( 'ip' => '192.121.86.94', 'domain' => 'torrage.com', 'active' => true ),
+				array( 'ip' => '192.121.86.89', 'domain' => 'zoink.it', 'active' => true ),
+				array( 'ip' => '94.142.129.179', 'domain' => 'torcache.com', 'active' => true ),
+				array( 'ip' => '89.185.228.50', 'domain' => 'torrage.ws', 'active' => true ),
+			),
+		),
 	);
 	
 	// error defines
@@ -29,9 +38,12 @@
 	
 	define( 'TORRAGE_DEBUG', false ); // enable if you want backtrace logs
 	
+	define( 'TORRENT_IS_GZIP', 1 );
+	define( 'TORRENT_IS_BZ2',  2 );
+	
 	// create folders if they do not exist
 	if( !is_dir( $SETTINGS['savepath'] ) ) @mkdir( $SETTINGS['savepath'], 0755, true );
-	if( !is_dir( $SETTINGS['synclists_path'] ) ) @mkdir( $SETTINGS['synclists_path'], 0755, true );
+	if( !is_dir( $SETTINGS['sync']['path'] ) ) @mkdir( $SETTINGS['sync']['path'], 0755, true );
 	
 	// get alot of uploads.
 	function add_tosyncfiles( $info_hash )
@@ -39,18 +51,26 @@
 		global $SETTINGS;
 		
 		// only append hashes if sync folder exists
-		if( is_dir( $SETTINGS['synclists_path'] ) )
+		if( is_dir( $SETTINGS['sync']['path'] ) )
 		{
 			date_default_timezone_set( 'CET' );
 			$day = date( 'Ymd' );
 			$month = date( 'Ym' );
 			
 			// Open file and append infohash from this upload
-			if( $SETTINGS['synclists_day'] )
-				file_put_contents( $SETTINGS['synclists_path'] . "/$day.txt", "$info_hash\n", FILE_APPEND );
-			if( $SETTINGS['synclists_month'] )
-				file_put_contents( $SETTINGS['synclists_path'] . "/$month.txt", "$info_hash\n", FILE_APPEND );
+			if( $SETTINGS['sync']['day'] )
+				file_put_contents( $SETTINGS['sync']['path'] . "/$day.txt", "$info_hash\n", FILE_APPEND );
+			if( $SETTINGS['sync']['month'] )
+				file_put_contents( $SETTINGS['sync']['path'] . "/$month.txt", "$info_hash\n", FILE_APPEND );
 		}
+	}
+	
+	function check_if_compressed( $filename )
+	{
+		$s = file_get_contents( $filename );
+		if( bin2hex( substr( $s, 0, 2 ) ) == '1f8b' ) { return TORRENT_IS_GZIP; }
+		if( substr( $s, 0, 3 ) == 'BZh' ) { return TORRENT_IS_BZ2; }
+		return false;
 	}
 	
 	function handle_upload( $f )
@@ -59,6 +79,35 @@
 		
 		include_once dirname( __FILE__ ) . '/TEapi.inc.php';
 		$torr = new Torrent();
+		
+		// test for possible gzip/bzip in torrent file
+		$status = check_if_compressed( $f );
+		if( $status > 0 )
+		{
+			switch( $status )
+			{
+				case TORRENT_IS_GZIP:
+					// file is gzip, uncompress and resave
+					$gz = gzopen( $f, 'rb' );
+					$gzip = '';
+					while( !feof( $gz ) )
+						$gzip .= gzread( $gz, 4096 );
+					gzclose( $gz );
+					file_put_contents( $f, $gzip );
+					unset( $gzip );
+					break;
+				case TORRENT_IS_BZ2:
+					// file is bz2, uncompess and resave
+					$bz = bzopen( $f, 'rb' );
+					$bzip = '';
+					while( !feof( $bz ) )
+						$bzip .= bzread( $bz, 4096 );
+					bzclose( $bz );
+					file_put_contents( $f, $bzip );
+					unset( $bzip );
+					break;
+			}
+		}
 		
 		if( !$torr->load( file_get_contents( $f ) ) )
 		{
@@ -107,7 +156,7 @@
 		include_once dirname( __FILE__ ) . '/clean.inc.php';
 		
 		$torr->torrent->remove( 'comment.utf-8' );
-		$torr->setComment( 'Torrent downloaded from torrent cache at http://torrage.com' );
+		$torr->setComment( 'Torrent downloaded from torrent cache at ' . getProto() . $SETTINGS['torrstoredns'] );
 		
 		$torr->setTrackers( $trackers );
 		$tdata = $torr->bencode();
@@ -122,8 +171,39 @@
 		@mkdir( dirname( $savefile ), 0777, 1 );
 		file_put_contents( $savefile, gzencode( $tdata, 9 ) );
 		
-		if( $SETTINGS['synclists_enable'] )
+		if( $SETTINGS['sync']['enabled'] )
 			add_tosyncfiles( $torr->getHash() );
+			
+		// sync to any possible mirrors
+		if( count( $SETTINGS['sync']['mirrors'] ) > 0 )
+		{
+			$files = array(
+				array(
+					'name' => 'torrent',
+					'type' => 'application/x-bittorrent',
+					'file' => $savefile
+				)
+			);
+			
+			$options = array(
+				'timeout' => 10,
+				'connecttimeout' => 5,
+				'dns_cache_timeout' => 60,
+			);
+			
+			// iterate through mirrors
+			foreach( $SETTINGS['sync']['mirrors'] as $mirror )
+			{
+				// upload to mirrors,
+				// but if mirror is actually itself, or it comes from one of our mirrors,
+				// ignore it
+				if( $mirror['active'] === true && !( $_SERVER['SERVER_ADDR'] == $mirror['ip'] ) && !( $_SERVER['REMOTE_ADDR'] == $mirror['ip'] ) )
+				{
+					// upload to mirror
+					http_post_fields( 'http://'.$mirror['domain'].'/autoupload.php', array(), $files, $options );
+				}
+			}
+		}
 		
 		return $torr->getHash();
 	}

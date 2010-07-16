@@ -373,7 +373,8 @@
 					$list->decode( $raw, $offset );
 					return $list;
 				case 'e':
-					return new BEncode_End();
+					$end = new BEncode_End();
+					return $end;
 				case '0':
 				case is_numeric( $char ):
 					$str = new BEncode_String();

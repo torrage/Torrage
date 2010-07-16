@@ -45,9 +45,11 @@
 		}
 		
 		// Detect typo /announce
+		$l = $p = '';
 		if( ( !stristr( $tracker, 'dht://' ) ) && ( stristr( $tracker, '/an' ) ) )
 		{
-			unset( $l, $p, $have_php );
+			unset( $l, $p );
+			$have_php = 0;
 			$l = strlen( $tracker );
 			$p = stripos( $tracker, '/an', 15 );
 			if( stristr( substr( $tracker, $p ), '.php' ) )
@@ -70,7 +72,7 @@
 	/* Decoding loop - End */
 	
 	/* Sanity loop - Start */
-	unset( $tr_add );
+	$tr_add = array();
 	reset( $trackers );
 	foreach( $trackers as $id => $tracker )
 	{
@@ -89,10 +91,10 @@
 		}
 	}
 	$trackers = merge_trackers( $trackers, $tr_add );
+	unset( $tr_add );
 	/* Sanity loop - End */
 	
 	/* Removal loop - Start */
-	unset( $tr_add );
 	reset( $trackers );
 	foreach( $trackers as $id => $tracker )
 	{
@@ -221,7 +223,7 @@
 	/* Removal loop - End */
 	
 	/* UDP tracker Loop - Start */
-	unset( $tr_add );
+	$tr_add = array();
 	reset( $trackers );
 	foreach( $trackers as $id => $tracker )
 	{
@@ -266,15 +268,9 @@
 	$trackers = merge_trackers( $trackers, $tr_add );
 	/* UDP tracker Loop - END */
 	
-	// set our default trackers
-	if( count( $SETTINGS['trackers'] ) > 0 )
-	{
-		foreach( $SETTINGS['trackers'] as $tracker )
-		{
-			array_push( $trackers, $tracker );
-		}
-	}
-	
+	// Set the OBT trackers.
+	array_push( $trackers, 'udp://tracker.openbittorrent.com:80/announce' );
+	array_push( $trackers, 'http://tracker.openbittorrent.com/announce' );
 	$trackers = array_reverse( $trackers );
 	
 	/* Functions - Start */
