@@ -18,7 +18,7 @@ server.modules = (
   "mod_setenv",
 )
 
-server.error-handler-404    = "/404.ghtml"
+server.error-handler-404    = "/404.php"
 
 url.rewrite-once = (
   "/torrent/([0-9A-F]{2,2})([0-9A-F]{2,2})([0-9A-F]{36,36}).*" => "/t/$1/$2/$3.torrent",
@@ -78,7 +78,7 @@ if req.host =~ "^(.+\.)?torrage.com" {
 	docroot "/var/data/torrage.com/www";
 	index ( "index.php" );
 	if req.path == "/sync/" { dirlist; do_deflate; }
-	if !physical.exists { rewrite "/404.ghtml"; docroot "/var/data/torrage.com/www"; static; set_status 404; }
+	if !physical.exists { rewrite "/404.php"; docroot "/var/data/torrage.com/www"; php; set_status 404; }
 	else if req.path =$ ".torrent" { pregzipped; }
 	else if req.path =$ ".php" { php; }
 	if req.path =$ ".ghtml" { pregzipped; }
