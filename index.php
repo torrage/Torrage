@@ -26,7 +26,7 @@
 	<li>We <b>DO NOT</b> have any type of search or listing system.</li>
 	<li>We <b>DO NOT</b> run our own trackers. </li>
 	<li>The original filename of the torrent is <b>NOT</b> saved.</li>
-	<li>We <b>DO NOT</b> log any IP adresses of uploaders.</li>
+	<li>We <b>DO NOT</b> log any IP adresses of uploaders / downloaders.</li>
 	<li>You can <b>ONLY</b> download torrents if you <b>ALREADY KNOW</b> the INFO_HASH of the torrent file.</li>
 	<li>Torrent files are cached on disk in gzip format making it extremely time consuming to search for any data contained within the torrent files.</li>
 	</ul>
@@ -34,7 +34,7 @@
 	<h2>Donations</h2>
 	<p>
 		We do not have any income or advertising on the site, instead we get the money it takes to run the service from the general public and other sites
-		that uses our services for caching torrent files. If you like our service and want to contribute please contact donations@torrage.com
+		that use our services for caching torrent files. If you like our service and want to contribute please contact donations@torrage.com
 	</p>
 	
 	<h2>Setup your own torrent storage cache!</h2>
