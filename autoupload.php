@@ -11,23 +11,27 @@
 	{
 		global $SETTINGS;
 		
-		switch( $error )
+		// only do error check test if the value we get back is purely a number
+		if( is_numeric( $error ) && strlen( $error ) == 2 )
 		{
-			case TORRAGE_FILE_NOT_FOUND:
-				header( 'X-Torrage-Error-Msg: File empty.' );
-				die( "Error $error: File not found.\n" );
-			case TORRAGE_FILE_EMPTY:
-				header( 'X-Torrage-Error-Msg: File empty.' );
-				die( "Error $error: File empty.\n" );
-			case TORRAGE_FILE_INVALID:
-				header( 'X-Torrage-Error-Msg: Broken torrent file, please recreate it and try again.' );
-				die( "Error $error: Broken torrent file, please recreate it and try again.\n" );
-			case TORRAGE_FILE_UNKNOWN:
-				header( 'X-Torrage-Error-Msg: Error ' . $error );
-				die( "Error $error" );
-			case TORRAGE_FILE_ERROR:
-				header( 'X-Torrage-Error-Msg: Something didn\'t work, please try again later!' );
-				die( "Error $error: Something did'nt work, please try again later!\n" );
+			switch( $error )
+			{
+				case TORRAGE_FILE_NOT_FOUND:
+					header( 'X-Torrage-Error-Msg: File empty.' );
+					die( "Error $error: File not found.\n" );
+				case TORRAGE_FILE_EMPTY:
+					header( 'X-Torrage-Error-Msg: File empty.' );
+					die( "Error $error: File empty.\n" );
+				case TORRAGE_FILE_INVALID:
+					header( 'X-Torrage-Error-Msg: Broken torrent file, please recreate it and try again.' );
+					die( "Error $error: Broken torrent file, please recreate it and try again.\n" );
+				case TORRAGE_FILE_UNKNOWN:
+					header( 'X-Torrage-Error-Msg: Error ' . $error );
+					die( "Error $error" );
+				case TORRAGE_FILE_ERROR:
+					header( 'X-Torrage-Error-Msg: Something didn\'t work, please try again later!' );
+					die( "Error $error: Something didn't work, please try again later!\n" );
+			}
 		}
 		
 		header( "X-Torrage-Infohash: $error" );

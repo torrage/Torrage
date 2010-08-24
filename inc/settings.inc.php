@@ -1,9 +1,20 @@
 <?php
 
+	// Assign default timezone to stockholm, this is mainly
+	// so sync script with multiple sites will obtain the same
+	// date structure making syncing much easier.
+	date_default_timezone_set( 'Europe/Stockholm' );
+
+	/**
+	 * Torrage configuration
+	 * Only change sections that you know you have to modify
+	 */
 	$SETTINGS = array(
-		'savepath' => '/var/data/torrage.com/www/t/', // where .torrent's are stored
+		// where .torrent's are stored
+		'savepath' => dirname( __FILE__ ) . '/../t/',
 	
-		'trackers' => array( // list of trackers that will always exist in torrent
+		// list of trackers that will always exist in torrent
+		'trackers' => array(
 			'http://tracker.openbittorrent.com/announce',
 			'udp://tracker.openbittorrent.com:80/announce',
 			'http://tracker.publicbt.com/announce',
@@ -12,19 +23,23 @@
 			'udp://denis.stalker.h3q.com:6969/announce',
 		),
 		
-		'torrstoredns' => 'torrage.com', // used for link generation
+		// used for link generation
+		'torrstoredns' => 'torrage.com',
 		
+		// sync configuration
 		'sync' => array(
 			'enabled' => true, // enable/disable sync files
 			'day' => true, // sync daily
 			'month' => true, // sync monthly
 			'path' => dirname( __FILE__ ) . '/../sync', // sync storage path
+			'tmppath' => dirname( __FILE__ ) . '/../tmp', // tmp path for sync script
+		
+			// list of mirror sites
 			'mirrors' => array(
-				// @todo: possibly live scan domains to ip and cache?
-				array( 'ip' => '192.121.86.94', 'domain' => 'torrage.com', 'active' => true ),
-				array( 'ip' => '192.121.86.89', 'domain' => 'zoink.it', 'active' => true ),
-				array( 'ip' => '94.142.129.179', 'domain' => 'torcache.com', 'active' => true ),
-				array( 'ip' => '89.185.228.50', 'domain' => 'torrage.ws', 'active' => true ),
+				array( 'domain' => 'torrage.com', 'active' => true ),
+				array( 'domain' => 'zoink.it', 'active' => true ),
+				array( 'domain' => 'torcache.com', 'active' => true ),
+				array( 'domain' => 'torrage.ws', 'active' => true ),
 			),
 		),
 	);
@@ -168,13 +183,25 @@
 		
 		$savefile = $SETTINGS['savepath'] . $hashtorr . '.torrent';
 		
-		@mkdir( dirname( $savefile ), 0777, 1 );
+		@mkdir( dirname( $savefile ), 0777, true );
 		file_put_contents( $savefile, gzencode( $tdata, 9 ) );
 		
 		if( $SETTINGS['sync']['enabled'] )
 			add_tosyncfiles( $torr->getHash() );
 			
 		// sync to any possible mirrors
+		
+		/**
+		 * @todo:
+		 * PUSH mechanism caused too much of a slowdown
+		 * when lots of incoming hashes were occuring.
+		 * Changing to a pull system. Left this here
+		 * incase can come up with some kind of nicer
+		 * system to push, maybe fork the process as not
+		 * to slow down this.
+		 **/
+			
+		/*
 		if( count( $SETTINGS['sync']['mirrors'] ) > 0 )
 		{
 			$files = array(
@@ -204,6 +231,7 @@
 				}
 			}
 		}
+		*/
 		
 		return $torr->getHash();
 	}
@@ -263,6 +291,21 @@
 	function getProto()
 	{
 		return ( $_SERVER['SERVER_PORT'] == 443 ) ? 'https://' : 'http://';
+	}
+	
+	function check_if_mirror_is_self( $mirror )
+	{
+		global $SETTINGS;
+		
+		$is_self = false;
+		// check if config name is domain (required for cron scripts)
+		// otherwise check if the host information is itself.
+		if( $SETTINGS['torrstoredns'] == $mirror['domain'] || ( ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':80' ) || ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':443' ) || ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] ) ) )
+		{
+			$is_self = true;
+		}
+		
+		return $is_self;
 	}
 	
 	if( TORRAGE_DEBUG === true )

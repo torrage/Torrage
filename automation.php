@@ -6,7 +6,7 @@
 <h1>API</h1>
 <p>People that are interested in using our service for automated caching of their newly created .torrent files or caching massive amounts of older files, can do so by using one our APIs.<br />
 This page contains some documentation on the APIs but also some example code in different languages. If you have some code for any additional language we do not cover, please give us some working example code over e-mail.</p>
-<p><i>All files will be cached at http://torrage.com/torrent/&lt;infoHash&gt;.torrent</i></p>
+<p><i>All files will be cached at <?=getProto();?><?=$SETTINGS['torrstoredns'];?>/torrent/&lt;infoHash&gt;.torrent</i></p>
 <p><b>Note:</b> HEX values A-F must be in uppercase in torrent URL's</p>
 
 <h2>SOAP API</h2>

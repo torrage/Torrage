@@ -14,36 +14,42 @@
 	{
 		global $SETTINGS;
 		
-		switch( $error )
+		// only do error check test if the value we get back is purely a number
+		if( is_numeric( $error ) && strlen( $error ) == 2 )
 		{
-			case TORRAGE_FILE_NOT_FOUND:
-				echo <<< HTML
+			switch( $error )
+			{
+				case TORRAGE_FILE_NOT_FOUND:
+					echo <<< HTML
 		Error: File empty
 		<p>If you want to upload another file, go <a href="/">back</a> to the main page.</p>
 
 HTML;
-			case TORRAGE_FILE_EMPTY:
-				echo <<< HTML
+				case TORRAGE_FILE_EMPTY:
+					echo <<< HTML
 		Error: File empty
 		<p>If you want to upload another file, go <a href="/">back</a> to the main page.</p>
 
 HTML;
-			case TORRAGE_FILE_INVALID:
-				echo <<< HTML
+				case TORRAGE_FILE_INVALID:
+					echo <<< HTML
 		Error: Broken torrent file, please recreate it and try again.
 		<p>If you want to upload another file, go <a href="/">back</a> to the main page.</p>
 
 HTML;
-			case TORRAGE_FILE_UNKNOWN:
-				echo 'Error 13';
-			case TORRAGE_FILE_ERROR:
-				echo <<< HTML
+				case TORRAGE_FILE_UNKNOWN:
+					echo 'Error 13';
+				case TORRAGE_FILE_ERROR:
+					echo <<< HTML
 		Error: Something didn't work, please try again later!
 		<p>If you want to upload another file, go <a href="/">back</a> to the main page.</p>
 
 HTML;
-			default:
-				echo <<< HTML
+			}
+		}
+		else
+		{
+			echo <<< HTML
 		<p>Your torrentfile is now cached and can be downloaded at:<br />
 		<br /><a href="/torrent/{$error}.torrent">http://{$SETTINGS['torrstoredns']}/torrent/{$error}.torrent</a></p>
 		<p>If you want to upload another file, go <a href="/">back</a> to the main page.</p>
