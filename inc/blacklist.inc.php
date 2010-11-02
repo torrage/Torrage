@@ -1,6 +1,7 @@
 <?php
 	// Idiots
 	$rem_patterns[] = 'torrage.com'; // We are not a tracker
+	$rem_patterns[] = 'zoink.it'; // We are not a tracker
 	$rem_patterns[] = '/scrape'; // No scrape in announce URL's
 	
 	// OBT

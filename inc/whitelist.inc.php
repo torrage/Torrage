@@ -183,6 +183,7 @@
 			}
 		}
 	}
+	
 	unset( $tr_port, $tr_no_port );
 	
 	function check_whitelist( $tracker, $pattern )

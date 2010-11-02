@@ -14,60 +14,63 @@
 	
 	/* Decoding loop - Start */
 	reset( $trackers );
-	foreach( $trackers as $id => $tracker )
+	if( is_array( $trackers ) && count( $trackers ) > 0 )
 	{
-		// Updated tracker url's  -  tracker{1-5}.istole.it:60500 to tracker.istole.it:80
-		if( stristr( $tracker, '.istole.it:60500/' ) )
+		foreach( $trackers as $id => $tracker )
 		{
-			$trackers[$id] = 'http://tracker.istole.it/announce';
-			continue;
-		}
-		
-		// Updated tracker url's  -  tracker.sladinki007.net to tracker.istole.it:80
-		if( stristr( $tracker, 'sladinki007.net' ) )
-		{
-			$trackers[$id] = 'http://tracker.istole.it/announce';
-			continue;
-		}
-		
-		// Updated tracker url's  -  eztv trackers to tracker.istole.it:80
-		if( stristr( $tracker, 'eztv' ) )
-		{
-			$trackers[$id] = 'http://tracker.istole.it/announce';
-			continue;
-		}
-		
-		// Miss spelled annonce => announce
-		if( stristr( $tracker, 'annonce' ) )
-		{
-			$trackers[$id] = str_replace( 'annonce', 'announce', trim( urldecode( $tracker ) ) );
-			continue;
-		}
-		
-		// Detect typo /announce
-		$l = $p = '';
-		if( ( !stristr( $tracker, 'dht://' ) ) && ( stristr( $tracker, '/an' ) ) )
-		{
-			unset( $l, $p );
-			$have_php = 0;
-			$l = strlen( $tracker );
-			$p = stripos( $tracker, '/an', 15 );
-			if( stristr( substr( $tracker, $p ), '.php' ) )
-				$have_php = 1;
-			// Make sure we are at the end.
-			if( ( $l - $p < 16 ) && ( $have_php ) )
+			// Updated tracker url's  -  tracker{1-5}.istole.it:60500 to tracker.istole.it:80
+			if( stristr( $tracker, '.istole.it:60500/' ) )
 			{
-				$trackers[$id] = substr( $tracker, 0, $p ) . '/announce.php';
+				$trackers[$id] = 'http://tracker.istole.it/announce';
 				continue;
 			}
-			elseif( $l - $p < 12 )
+			
+			// Updated tracker url's  -  tracker.sladinki007.net to tracker.istole.it:80
+			if( stristr( $tracker, 'sladinki007.net' ) )
 			{
-				$trackers[$id] = substr( $tracker, 0, $p ) . '/announce';
+				$trackers[$id] = 'http://tracker.istole.it/announce';
 				continue;
 			}
+			
+			// Updated tracker url's  -  eztv trackers to tracker.istole.it:80
+			if( stristr( $tracker, 'eztv' ) )
+			{
+				$trackers[$id] = 'http://tracker.istole.it/announce';
+				continue;
+			}
+			
+			// Miss spelled annonce => announce
+			if( stristr( $tracker, 'annonce' ) )
+			{
+				$trackers[$id] = str_replace( 'annonce', 'announce', trim( urldecode( $tracker ) ) );
+				continue;
+			}
+			
+			// Detect typo /announce
+			$l = $p = '';
+			if( ( !stristr( $tracker, 'dht://' ) ) && ( stristr( $tracker, '/an' ) ) )
+			{
+				unset( $l, $p );
+				$have_php = 0;
+				$l = strlen( $tracker );
+				$p = stripos( $tracker, '/an', 15 );
+				if( stristr( substr( $tracker, $p ), '.php' ) )
+					$have_php = 1;
+				// Make sure we are at the end.
+				if( ( $l - $p < 16 ) && ( $have_php ) )
+				{
+					$trackers[$id] = substr( $tracker, 0, $p ) . '/announce.php';
+					continue;
+				}
+				elseif( $l - $p < 12 )
+				{
+					$trackers[$id] = substr( $tracker, 0, $p ) . '/announce';
+					continue;
+				}
+			}
+			
+			$trackers[$id] = trim( urldecode( $tracker ) );
 		}
-		
-		$trackers[$id] = trim( urldecode( $tracker ) );
 	}
 	/* Decoding loop - End */
 	
@@ -260,7 +263,7 @@
 					// Add - udp://
 					$tr_add[] = 'ud' . substr( $tracker, $s, $e - $s ) . ":$port" . substr( $tracker, $p );
 					
-				/* I HAVE A BUG HERE */
+					/* I HAVE A BUG HERE */
 				}
 			}
 		}

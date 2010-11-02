@@ -87,6 +87,28 @@
 		if( substr( $s, 0, 3 ) == 'BZh' ) { return TORRENT_IS_BZ2; }
 		return false;
 	}
+		
+	function __flattern_array( $trackers )
+	{
+		$__trackers = array();
+		if( is_array( $trackers ) && count( $trackers ) > 0 )
+		{
+			foreach( $trackers as $tracker )
+			{
+				if( is_array( $tracker ) )
+				{
+					$temp = __flattern_array( $tracker );
+					$__trackers = array_merge( $__trackers, $temp );
+				}
+				elseif( !empty( $tracker ) )
+				{
+					array_push( $__trackers, $tracker );
+				}
+			}
+		}
+		
+		return $__trackers;
+	}
 	
 	function handle_upload( $f )
 	{
@@ -126,8 +148,10 @@
 		
 		if( !$torr->load( file_get_contents( $f ) ) )
 		{
+			@unlink( $f ); // remove the temp file
 			return TORRAGE_FILE_INVALID;
 		}
+		@unlink( $f ); // remove the temp file
 		
 		$hashtorr = create_hashtorr( $torr->getHash() );
 		
@@ -142,12 +166,14 @@
 			}
 			else
 			{
-				$existtrackers = $existtorr->getTrackers();
+				$existtrackers = __flattern_array( $existtorr->getTrackers() );
 			}
 		}
 		
-		$tr_from = $torr->getTrackers();
-		if( count( $existtrackers ) > 0 )
+		$tr_from = __flattern_array( $torr->getTrackers() );
+		
+		$tr = array();
+		if( !empty( $existtrackers ) && count( $existtrackers ) > 0 )
 		{
 			include_once dirname( __FILE__ ) . '/whitelist.inc.php';
 		}
@@ -155,25 +181,29 @@
 		{
 			$tr = $tr_from;
 		}
-		unset( $tr_from );
 		
-		if( is_array( $existtrackers ) )
-		{
-			foreach( $existtrackers as $a )
-			{
-				$tr[] = $a;
-			}
-		}
-		unset( $a, $existtrackers );
+		$tr = array_merge( $tr, $existtrackers );
 		$trackers = array_unique( $tr );
 		
 		// Do tracker cleaning
 		include_once dirname( __FILE__ ) . '/clean.inc.php';
 		
+		// store trackers into new array format for bencoding
+		$__trackers = array();
+		if( !empty( $trackers ) && is_array( $trackers ) )
+		{
+			foreach( $trackers as $a )
+			{
+				$__trackers[] = array( $a );
+			}
+		}
+		
+		unset( $existtrackers, $tr, $tr_from, $trackers );
+		
 		$torr->torrent->remove( 'comment.utf-8' );
 		$torr->setComment( 'Torrent downloaded from torrent cache at ' . getProto() . $SETTINGS['torrstoredns'] );
 		
-		$torr->setTrackers( $trackers );
+		$torr->setTrackers( $__trackers );
 		$tdata = $torr->bencode();
 		
 		if( empty( $tdata ) )
@@ -290,7 +320,7 @@
 	
 	function getProto()
 	{
-		return ( $_SERVER['SERVER_PORT'] == 443 ) ? 'https://' : 'http://';
+		return ( @$_SERVER['SERVER_PORT'] == 443 ) ? 'https://' : 'http://';
 	}
 	
 	function check_if_mirror_is_self( $mirror )
@@ -300,7 +330,7 @@
 		$is_self = false;
 		// check if config name is domain (required for cron scripts)
 		// otherwise check if the host information is itself.
-		if( $SETTINGS['torrstoredns'] == $mirror['domain'] || ( ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':80' ) || ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':443' ) || ( strtolower( $_SERVER['HTTP_HOST'] ) == $mirror['domain'] ) ) )
+		if( $SETTINGS['torrstoredns'] == $mirror['domain'] || ( ( strtolower( @$_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':80' ) || ( strtolower( @$_SERVER['HTTP_HOST'] ) == $mirror['domain'] . ':443' ) || ( strtolower( @$_SERVER['HTTP_HOST'] ) == $mirror['domain'] ) ) )
 		{
 			$is_self = true;
 		}

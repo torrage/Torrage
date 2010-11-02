@@ -1,312 +1,290 @@
 <?php
 
+	// some torrent files are large (>4MB) allow for some processing space
+	ini_set( 'memory_limit', '256M' );
+
 	class Torrent
 	{
 		// public class members
 		// public $torrent;
 		public $info;
-	
+
 		// Public error message, $error is set if load() returns false
 		public $error;
-	
+
 		// Load torrent file data
 		// $data - raw torrent file contents
 		public function load( &$data )
 		{
-			$this->torrent = BEncode::decode( $data );
-			
-			if( $this->torrent->get_type() == 'error' )
+			if( empty( $data ) )
 			{
-				$this->error = $this->torrent->get_plain();
+				$this->error = 'Error loading torrent file.';
 				return false;
 			}
-			else
+
+			try
 			{
-				if( $this->torrent->get_type() != 'dictionary' )
-				{
-					$this->error = 'The file was not a valid torrent file.';
-					return false;
-				}
+				$this->torrent = new BEncode();
+				$this->torrent->decode( $data, true );
 			}
-			
-			$this->info = $this->torrent->get_value( 'info' );
-			if( !$this->info )
+			catch( Exception $e )
+			{
+				$this->error = $e->getMessage();
+				return false;
+			}
+
+			$this->info = $this->torrent->get( 'info' );
+			if( empty( $this->info ) )
 			{
 				$this->error = 'Could not find info dictionary.';
 				return false;
 			}
-			
+
 			return true;
 		}
-	
+
 		// Get comment
 		// return - string
 		public function getComment()
 		{
-			return $this->torrent->get_value( 'comment' ) ? $this->torrent->get_value( 'comment' )->get_plain() : null;
+			return $this->torrent->get( 'comment' ) ? $this->torrent->get( 'comment' ) : null;
 		}
-	
+
 		// Get creatuion date
 		// return - php date
 		public function getCreationDate()
 		{
-			return $this->torrent->get_value( 'creation date' ) ? $this->torrent->get_value( 'creation date' )->get_plain() : null;
+			return $this->torrent->get( 'creation date' ) ? $this->torrent->get( 'creation date' ) : null;
 		}
-	
+
 		// Get created by
 		// return - string
 		public function getCreatedBy()
 		{
-			return $this->torrent->get_value( 'created by' ) ? $this->torrent->get_value( 'created by' )->get_plain() : null;
+			return $this->torrent->get( 'created by' ) ? $this->torrent->get( 'created by' ) : null;
 		}
-	
+
 		// Get name
 		// return - filename (single file torrent)
 		//          directory (multi-file torrent)
 		// see also - getFiles()
 		public function getName()
 		{
-			return $this->info->get_value( 'name' )->get_plain();
+			return $this->info->get( 'name' );
 		}
-	
+
 		// Get piece length
 		// return - int
 		public function getPieceLength()
 		{
-			return $this->info->get_value( 'piece length' )->get_plain();
+			return $this->info->get( 'piece length' );
 		}
-	
+
 		// Get pieces
 		// return - raw binary of peice hashes
 		public function getPieces()
 		{
-			return $this->info->get_value( 'pieces' )->get_plain();
+			return $this->info->get( 'pieces' );
 		}
-	
+
 		// Get public flag
 		// return - -1 public, implicit
 		//           0 public, explicit
 		//           1 private
 		public function getPrivate()
 		{
-			if( $this->info->get_value( 'private' ) )
+			if( $this->info->get( 'private' ) )
 			{
-				return $this->info->get_value( 'private' )->get_plain();
+				return $this->info->get( 'private' );
 			}
 			return -1;
 		}
-	
+
 		// Get a list of files
 		// return - array of Torrent_File
 		public function getFiles()
 		{
 			// Load files
 			$filelist = array();
-			$length = $this->info->get_value( 'length' );
-			
+			$length = $this->info->get( 'length' );
+
 			if( $length )
 			{
 				$file = new Torrent_File();
-				$file->name = $this->info->get_value( 'name' )->get_plain();
-				$file->length = $this->info->get_value( 'length' )->get_plain();
+				$file->name = $this->info->get( 'name' );
+				$file->length = $this->info->get( 'length' );
 				array_push( $filelist, $file );
 			}
 			else
 			{
-				if( $this->info->get_value( 'files' ) )
+				if( $this->info->get( 'files' ) )
 				{
-					$files = $this->info->get_value( 'files' )->get_plain();
+					$files = $this->info->get( 'files' );
 					while( list( $key, $value ) = each( $files ) )
 					{
 						$file = new Torrent_File();
-						
-						$path = $value->get_value( 'path' )->get_plain();
+
+						$path = $value->get( 'path' );
 						while( list( $key, $value2 ) = each( $path ) )
 						{
-							$file->name .= '/' . $value2->get_plain();
+							$file->name .= '/' . $value2;
 						}
 						$file->name = ltrim( $file->name, '/' );
-						$file->length = $value->get_value( 'length' )->get_plain();
-						
+						$file->length = $value->get( 'length' );
+
 						array_push( $filelist, $file );
 					}
 				}
 			}
-			
+
 			return $filelist;
 		}
-	
+
 		// Get a list of trackers
 		// return - array of strings
 		public function getTrackers()
 		{
 			// Load tracker list
 			$trackerlist = array();
-			
-			if( $this->torrent->get_value( 'announce-list' ) )
+			$trackers = $this->torrent->get( 'announce-list' );
+
+			if( !empty( $trackers ) )
 			{
-				$trackers = $this->torrent->get_value( 'announce-list' )->get_plain();
 				while( list( $key, $value ) = each( $trackers ) )
 				{
-					if( is_array( $value->get_plain() ) )
+					if( is_array( $value ) )
 					{
 						while( list( $key, $value2 ) = each( $value ) )
 						{
-							while( list( $key, $value3 ) = each( $value2 ) )
+							if( is_array( $value2 ) )
 							{
-								array_push( $trackerlist, $value3->get_plain() );
+								while( list( $key, $value3 ) = each( $value2 ) )
+								{
+									array_push( $trackerlist, array( $value3 ) );
+								}
+							}
+							else
+							{
+								array_push( $trackerlist, array( $value2 ) );
 							}
 						}
 					}
 					else
 					{
-						array_push( $trackerlist, $value->get_plain() );
+						array_push( $trackerlist, array( $value ) );
 					}
 				}
 			}
 			else
 			{
-				if( $this->torrent->get_value( 'announce' ) )
+				if( $this->torrent->get( 'announce' ) )
 				{
-					array_push( $trackerlist, $this->torrent->get_value( 'announce' )->get_plain() );
+					array_push( $trackerlist, array( $this->torrent->get( 'announce' ) ) );
 				}
 			}
-			
+
 			return $trackerlist;
 		}
-	
+
 		// Helper function to make adding a tracker easier
 		// $tracker_url - string
 		public function addTracker( $tracker_url )
 		{
 			$trackers = $this->getTrackers();
-			$trackers[] = $tracker_url;
+			array_push( $trackers, array( $tracker_url ) );
 			$this->setTrackers( $trackers );
 		}
-	
+
 		// Replace the current trackers with the supplied list
 		// $trackerlist - array of strings
 		public function setTrackers( $trackerlist )
 		{
-			if( count( $trackerlist ) >= 1 )
+			if( count( $trackerlist ) > 0 )
 			{
 				$this->torrent->remove( 'announce-list' );
-				$string = new BEncode_String( $trackerlist[0] );
-				$this->torrent->set( 'announce', $string );
+				$this->torrent->set( 'announce', $trackerlist[0][0] );
 			}
-			
+
 			if( count( $trackerlist ) > 1 )
 			{
-				$list = new BEncode_List();
-				
-				while( list( $key, $value ) = each( $trackerlist ) )
-				{
-					$list2 = new BEncode_List();
-					$string = new BEncode_String( $value );
-					$list2->add( $string );
-					$list->add( $list2 );
-				}
-				
-				$this->torrent->set( 'announce-list', $list );
+				$this->torrent->set( 'announce-list', $trackerlist );
 			}
 		}
-	
+
 		// Update the list of files
 		// $filelist - array of Torrent_File
 		public function setFiles( $filelist )
 		{
 			// Load files
-			$length = $this->info->get_value( 'length' );
-			
+			$length = $this->info->get( 'length' );
+
 			if( $length )
 			{
 				$filelist[0] = str_replace( '\\', '/', $filelist[0] );
-				$string = new BEncode_String( $filelist[0] );
-				$this->info->set( 'name', $string );
+				$this->info->set( 'name', $filelist[0] );
 			}
 			else
 			{
-				if( $this->info->get_value( 'files' ) )
+				$files = $this->info->get( 'files' );
+				if( !empty( $files ) )
 				{
-					$files = $this->info->get_value( 'files' )->get_plain();
 					for( $i = 0; $i < count( $files ); ++$i )
 					{
 						$file_parts = split( '/', $filelist[$i] );
-						$path = new BEncode_List();
-						foreach( $file_parts as $part )
-						{
-							$string = new BEncode_String( $part );
-							$path->add( $string );
-						}
-						$files[$i]->set( 'path', $path );
+						$files[$i]->set( 'path', $file_parts );
 					}
 				}
 			}
 		}
-	
+
 		// Set the comment field
 		// $value - string
 		public function setComment( $value )
 		{
 			$type = 'comment';
-			$key = $this->torrent->get_value( $type );
+
 			if( $value == '' )
 			{
 				$this->torrent->remove( $type );
 			}
-			elseif( $key )
-			{
-				$key->set( $value );
-			}
 			else
 			{
-				$string = new BEncode_String( $value );
-				$this->torrent->set( $type, $string );
+				$this->torrent->set( $type, $value );
 			}
 		}
-	
+
 		// Set the created by field
 		// $value - string
 		public function setCreatedBy( $value )
 		{
 			$type = 'created by';
-			$key = $this->torrent->get_value( $type );
+
 			if( $value == '' )
 			{
 				$this->torrent->remove( $type );
 			}
-			elseif( $key )
-			{
-				$key->set( $value );
-			}
 			else
 			{
-				$string = new BEncode_String( $value );
-				$this->torrent->set( $type, $string );
+				$this->torrent->set( $type, $value );
 			}
 		}
-	
+
 		// Set the creation date
 		// $value - php date
 		public function setCreationDate( $value )
 		{
 			$type = 'creation date';
-			$key = $this->torrent->get_value( $type );
+
 			if( $value == '' )
 			{
 				$this->torrent->remove( $type );
 			}
-			elseif( $key )
-			{
-				$key->set( $value );
-			}
 			else
 			{
-				$int = new BEncode_Int( $value );
-				$this->torrent->set( $type, $int );
+				$this->torrent->set( $type, $value );
 			}
 		}
-	
+
 		// Change the public flag
 		// $value - -1 public, implicit
 		//           0 public, explicit
@@ -319,329 +297,408 @@
 			}
 			else
 			{
-				$int = new BEncode_Int( $value );
-				$this->info->set( 'private', $int );
+				$this->info->set( 'private', $value );
 			}
 		}
-	
+
 		// Bencode the torrent
 		public function bencode()
 		{
 			return $this->torrent->encode();
 		}
-	
+
 		// Return the torrent's hash
 		public function getHash()
 		{
-			return strtoupper( sha1( $this->info->encode() ) );
+			return strtoupper( sha1( $this->torrent->encode( $this->info ) ) );
 		}
 	}
-	
+
 	// Simple class to encapsulate filename and length
 	class Torrent_File
 	{
 		public $name;
 		public $length;
 	}
-	
+
+	/**
+	 * 
+	 *
+	 **/	
 	class BEncode
 	{
-		public static function &decode( &$raw, &$offset = 0 )
+		public $__data;
+
+		function get( $key )
 		{
-			if( $offset >= strlen( $raw ) )
+		    return $this->___get( $this->__data, $key );
+		}
+
+		public function remove( $key )
+		{
+			$this->___remove( $this->__data, $key );
+		}
+
+		public function set( $key, $value )
+		{
+			if( $this->___set( $this->__data, $key, $value ) === false )
 			{
-				return new BEncode_Error( 'Decoder exceeded max length.' );
-			}
-			
-			$char = $raw[$offset];
-			switch( $char )
-			{
-				case 'i':
-					$int = new BEncode_Int();
-					$int->decode( $raw, $offset );
-					return $int;
-				case 'd':
-					$dict = new BEncode_Dictionary();
-					
-					if( $check = $dict->decode( $raw, $offset ) )
-					{
-						return $check;
-					}
-					return $dict;
-				case 'l':
-					$list = new BEncode_List();
-					$list->decode( $raw, $offset );
-					return $list;
-				case 'e':
-					$end = new BEncode_End();
-					return $end;
-				case '0':
-				case is_numeric( $char ):
-					$str = new BEncode_String();
-					$str->decode( $raw, $offset );
-					return $str;
-				default:
-					return new BEncode_Error( "Decoder encountered unknown char '$char' at offset $offset." );
+				$this->__data[$key] = $value;
 			}
 		}
-	}
-	
-	class BEncode_End
-	{
-		public function get_type()
+
+		function ___get( $array, $matchkey )
 		{
-			return 'end';
-		}
-	}
-	
-	class BEncode_Error
-	{
-		public $error;
-	
-		public function BEncode_Error( $error )
-		{
-			$this->error = $error;
-		}
-	
-		public function get_plain()
-		{
-			return $this->error;
-		}
-	
-		public function get_type()
-		{
-			return 'error';
-		}
-	}
-	
-	class BEncode_Int
-	{
-		public $value;
-	
-		public function BEncode_Int( $value = null )
-		{
-			$this->value = $value;
-		}
-	
-		public function decode( &$raw, &$offset )
-		{
-			$end = strpos( $raw, 'e', $offset );
-			$this->value = substr( $raw, ++$offset, $end - $offset );
-			$offset += ( $end - $offset );
-		}
-	
-		public function get_plain()
-		{
-			return $this->value;
-		}
-	
-		public function get_type()
-		{
-			return 'int';
-		}
-	
-		public function encode()
-		{
-			return "i{$this->value}e";
-		}
-	
-		public function set( $value )
-		{
-			$this->value = $value;
-		}
-	}
-	
-	class BEncode_Dictionary
-	{
-		public $value = array();
-	
-		public function decode( &$raw, &$offset )
-		{
-			$dictionary = array();
-			
-			while( true )
+			if( is_array( $array ) && count( $array ) > 0 )
 			{
-				$name = BEncode::decode( $raw, ++$offset );
-				
-				if( $name->get_type() == 'end' )
+				foreach( $array as $key => $val )
 				{
-					break;
-				}
-				else
-				{
-					if( $name->get_type() == 'error' )
+					if( $key === $matchkey )
 					{
-						return $name;
+						return $val;
 					}
-					else
-					{ 
-						if( $name->get_type() != 'string' )
+					else if( is_array( $val ) )
+					{
+						$return = $this->___get( $val, $matchkey );
+						if( $return != null )
 						{
-							return new BEncode_Error( 'Key name in dictionary was not a string.' );
+							return $return;
 						}
 					}
 				}
-				
-				$value = BEncode::decode( $raw, ++$offset );
-				
-				if( $value->get_type() == 'error' )
+			}
+
+			return null;
+		}
+
+		function ___remove( &$array, $matchkey )
+		{
+			if( is_array( $array ) && count( $array ) > 0 )
+			{
+				foreach( $array as $key => &$value )
 				{
-					return $value;
+					if( $key === $matchkey )
+					{ 
+						unset( $array[$key] );
+					}
+					else 
+					{
+						if( is_array( $value ) )
+						{
+							$this->___remove( $value, $matchkey );
+						}
+					}
 				}
-				
-				$dictionary[$name->get_plain()] = $value;
 			}
-			
-			$this->value = $dictionary;
 		}
-	
-		public function get_value( $key )
+
+		function ___set( &$array, $matchkey, $newvalue )
 		{
-			if( isset( $this->value[$key] ) )
+			if( is_array( $array ) && count( $array ) > 0 )
 			{
-				return $this->value[$key];
+				foreach( $array as $key => &$value )
+				{
+					if( $key === $matchkey )
+					{ 
+						$array[$key] = $newvalue;
+						return true;
+					}
+					else 
+					{
+						if( is_array( $value ) )
+						{
+							return $this->___set( $value, $matchkey, $newvalue );
+						}
+					}
+				}
 			}
-			else
-			{
-				return null;
-			}
+			return false;
 		}
-	
-		public function encode()
-		{
-			$this->sort();
-			
-			$encoded = 'd';
-			while( list( $key, $value ) = each( $this->value ) )
-			{
-				$bstr = new BEncode_String();
-				$bstr->set( $key );
-				$encoded .= $bstr->encode();
-				$encoded .= $value->encode();
-			}
-			$encoded .= 'e';
-			return $encoded;
-		}
-	
-		public function get_type()
-		{
-			return 'dictionary';
-		}
-	
-		public function remove( $key )
-		{
-			unset( $this->value[$key] );
-		}
-	
-		public function set( $key, $value )
-		{
-			$this->value[$key] = $value;
-		}
-	
+
 		public function sort()
 		{
-			ksort( $this->value );
+			ksort( $this->__data );
 		}
-	
+
 		public function count()
 		{
-			return count( $this->value );
+			return count( $this->__data );
 		}
-	}
-	
-	class BEncode_List
-	{
-		public $value = array();
-	
-		public function add( $bval )
+
+		public function decode( $data, $usegmp = false, $strict = false )
 		{
-			array_push( $this->value, $bval );
-		}
-	
-		public function decode( &$raw, &$offset )
-		{
-			$list = array();
-			
-			while( true )
+			$stack = array();
+			$offset = 0;
+			$len = strlen( $data );
+
+			// type: 0: nothing, 1: string, 2: integer, 3: list, 4: dict
+			$parenttype = 0;
+			$parent = null;
+			$key = null;
+			$value = null;
+
+			while( $offset < $len )
 			{
-				$value = BEncode::decode( $raw, ++$offset );
-				
-				if( $value->get_type() == 'end' )
+				$c = $data[$offset];
+				$value = null;
+				if( $c >= '0' && $c <= '9' )
 				{
-					break;
+					$colon = strpos( $data, ':', $offset + 1 );
+
+					if( FALSE === $colon )
+					{
+						throw new Exception( "Couldn't find ':' in encoded string at position $offset" );
+					}
+
+					$slen = substr( $data, $offset, $colon - $offset );
+
+					if( !ctype_digit( $slen ) || ( $slen != '0' && $slen[0] == '0' ) )
+					{
+						throw new Exception( "Couldn't parse string length '$slen' at position $offset" );
+					}
+
+					$colon++;
+
+					if( $colon + $slen > $len )
+					{
+						throw new Exception( "Unexpected end of bencoded data in string at position $offset" );
+					}
+
+					$offset = $colon + $slen;
+					$value = substr( $data, $colon, $slen );
+				}
+				elseif( $c === 'i' )
+				{
+					if( $parenttype === 4 && null === $key )
+					{
+						throw new Exception( "Expected string as key in dict, not integer at position $offset" );
+					}
+
+					$end = strpos( $data, 'e', $offset + 1 );
+
+					if( FALSE === $end )
+					{
+						throw new Exception( "Couldn't find end of integer at position $offset" );
+					}
+
+					$offset++;
+					$value = substr( $data, $offset, $end - $offset );
+
+					if( $value === "" || "-0" === $value )
+					{
+						throw new Exception( "Invalid integer '$value' at position $offset" );
+					}
+
+					$cv = $value;
+					if( $cv[0] === '-' )
+						$cv = substr( $cv, 1 );
+
+					if( !ctype_digit( $cv ) || ( $cv !== '0' && $cv[0] === '0' ) )
+					{
+						throw new Exception( "Invalid integer '$value' at position $offset" );
+					}
+
+					if( $usegmp )
+					{
+						if( is_int( 0 + $value ) )
+						{
+							$value = 0 + $value;
+						}
+						else
+						{
+							$value = gmp_init( $value );
+						}
+					}
+					else
+					{
+						if( is_int( 0 + $value ) )
+							$value = 0 + $value;
+					}
+					$offset = $end + 1;
+				}
+				elseif( $c === 'l' )
+				{
+					if( $parenttype === 4 && null === $key )
+					{
+						throw new Exception( "Expected string as key in dict, not list at position $offset" );
+					}
+
+					$offset++;
+
+					if( 0 != $parenttype )
+						array_push( $stack, array( $parent, $parenttype, $key ) );
+
+					$parent = array();
+					$parenttype = 3;
+					$key = null;
+					continue;
+				}
+				elseif( $c === 'd' )
+				{
+					if( $parenttype === 4 && null === $key )
+					{
+						throw new Exception( "Expected string as key in dict, not dict at position $offset" );
+					}
+
+					$offset++;
+
+					if( 0 !== $parenttype )
+						array_push( $stack, array( $parent, $parenttype, $key ) );
+
+					$parent = array();
+					$parenttype = 4;
+					$key = null;
+					continue;
+				}
+				elseif( $c === 'e' )
+				{
+					$offset++;
+					if( $parenttype === 3 )
+					{
+						$value = $parent;
+						$t = array_pop( $stack );
+
+						if( $t )
+						{
+							list( $parent, $parenttype, $key ) = $t;
+						}
+						else
+						{
+							$parenttype = 0;
+						}
+					}
+					elseif( $parenttype === 4 )
+					{
+						if( null !== $key )
+						{
+							throw new Exception( "Expected value for dict, got end of dict at position $offset" );
+						}
+
+						$value = $parent;
+						$t = array_pop( $stack );
+
+						if( $t )
+						{
+							list( $parent, $parenttype, $key ) = $t;
+						}
+						else
+						{
+							$parenttype = 0;
+						}
+					}
+					else
+					{
+						throw new Exception( "Unexpected 'e' - no container at position $offset" );
+					}
 				}
 				else
 				{
-					if( $value->get_type() == 'error' )
+					throw new Exception( "Unexpected character '$c' at position $offset" );
+				}
+
+				if( $parenttype === 4 )
+				{
+					if( null === $key )
 					{
-						return $value;
+						$key = $value;
+					}
+					else
+					{
+						$parent[$key] = $value;
+						$key = null;
 					}
 				}
-				array_push( $list, $value );
+				elseif( $parenttype === 3 )
+				{
+					array_push( $parent, $value );
+				}
+				else
+				{
+					if( $strict && $offset < $len )
+					{
+						throw new Exception( "Trash at end of bencoded data at position $offset" );
+					}
+
+					$this->__data = $value;
+					return true;
+				}
 			}
-			
-			$this->value = $list;
+
+			throw new Exception( "Unexpected end of bencoded data" );
 		}
-	
-		public function encode()
+
+		function encode( $var = null, $autonumbers = true )
 		{
-			$encoded = 'l';
-			
-			for( $i = 0; $i < count( $this->value ); ++$i )
+			if( $var === null )
 			{
-				$encoded .= $this->value[$i]->encode();
+				$var = &$this->__data;
 			}
-			$encoded .= 'e';
-			return $encoded;
-		}
-	
-		public function get_plain()
-		{
-			return $this->value;
-		}
-	
-		public function get_type()
-		{
-			return 'list';
+
+			if( is_string( $var ) )
+			{
+				if( $autonumbers && $var !== "" && $var !== "-" && $var !== "-0" )
+				{
+					$v = $var;
+					if( $v[0] === '-' )
+						$v = substr( $v, 1 );
+
+					if( ctype_digit( $v ) && ( $v[0] !== '0' || $v === '0' ) )
+					{
+						return "i" . $var . "e";
+					}
+				}
+				return strlen( $var ) . ":" . $var;
+			}
+			elseif( is_int( $var ) )
+			{
+				return "i" . $var . "e";
+			}
+			elseif( is_resource( $var ) && get_resource_type( $var ) == "GMP integer" )
+			{
+				return "i" . gmp_strval( $var ) . "e";
+			}
+			elseif( is_array( $var ) )
+			{
+				ksort( $var );
+				if( is_string( key( $var ) ) )
+				{
+					$text = 'd';
+					foreach( $var as $key => $val )
+					{
+						$text .= strlen( $key ) . ':' . $key . $this->encode( $val );
+					}
+					return $text . 'e';
+				}
+				else
+				{
+					$text = 'l';
+					foreach( $var as $val )
+					{
+						$text .= $this->encode( $val );
+					}
+					return $text . 'e';
+				}
+			}
+			elseif( $var instanceof BEncodeStatic )
+			{
+				return $var->code;
+			}
+			else
+			{
+				// try as string
+				return strlen( $var ) . ":" . $var;
+			}
 		}
 	}
-	
-	class BEncode_String
+
+	// If you need to send an empty dict use @new BEncodeStatic("de")@
+	// an empty array will be sent as empty list ("le")
+	class BEncodeStatic
 	{
-		public $value;
-	
-		public function BEncode_String( $value = null )
+		var $code;
+
+		function __construct( $code )
 		{
-			$this->value = $value;
-		}
-	
-		public function decode( &$raw, &$offset )
-		{
-			$end = strpos( $raw, ':', $offset );
-			$len = substr( $raw, $offset, $end - $offset );
-			$offset += ( $len + ( $end - $offset ) );
-			$end++;
-			$this->value = substr( $raw, $end, $len );
-		}
-	
-		public function get_plain()
-		{
-			return $this->value;
-		}
-	
-		public function get_type()
-		{
-			return 'string';
-		}
-	
-		public function encode()
-		{
-			$len = strlen( $this->value );
-			return "$len:{$this->value}";
-		}
-	
-		public function set( $value )
-		{
-			$this->value = $value;
+			$this->code = $code;
 		}
 	}

@@ -1,7 +1,8 @@
 <?php
 	include_once dirname( __FILE__ ) . '/inc/main.inc.php';
 	
-	set_time_limit( 600 );
+	// to allow for big files
+	set_time_limit( 0 );
 	ini_set( 'upload_max_filesize', 6 * 1048576 );
 	error_reporting( 0 );
 	
@@ -31,7 +32,15 @@
 				case TORRAGE_FILE_ERROR:
 					header( 'X-Torrage-Error-Msg: Something didn\'t work, please try again later!' );
 					die( "Error $error: Something didn't work, please try again later!\n" );
+				default:
+					header( 'X-Torrage-Error-Msg: UNKNOWN ERROR' );
+					die( "Error $error: Unknown error occurred\n" );
 			}
+		}
+		elseif( empty( $error ) )
+		{
+			header( 'X-Torrage-Error-Msg: Empty hash.' );
+			die( "Error: No info hash returned.\n" );
 		}
 		
 		header( "X-Torrage-Infohash: $error" );
