@@ -21,21 +21,28 @@
 			// Updated tracker url's  -  tracker{1-5}.istole.it:60500 to tracker.istole.it:80
 			if( stristr( $tracker, '.istole.it:60500/' ) )
 			{
-				$trackers[$id] = 'http://tracker.istole.it/announce';
+				$trackers[$id] = 'udp://tracker.istole.it:80/announce';
 				continue;
 			}
 			
 			// Updated tracker url's  -  tracker.sladinki007.net to tracker.istole.it:80
 			if( stristr( $tracker, 'sladinki007.net' ) )
 			{
-				$trackers[$id] = 'http://tracker.istole.it/announce';
+				$trackers[$id] = 'udp://tracker.istole.it:80/announce';
 				continue;
 			}
 			
 			// Updated tracker url's  -  eztv trackers to tracker.istole.it:80
 			if( stristr( $tracker, 'eztv' ) )
 			{
-				$trackers[$id] = 'http://tracker.istole.it/announce';
+				$trackers[$id] = 'udp://tracker.istole.it:80/announce';
+				continue;
+			}
+			
+			// Updated tracker url's  -  denis trackers to tracker.ccc.de:80
+			if( stristr( $tracker, 'denis.stalker.h3q.com' ) )
+			{
+				$trackers[$id] = 'udp://tracker.ccc.de:80/announce';
 				continue;
 			}
 			

@@ -1,6 +1,7 @@
 <?php
 
 	$udp_patterns[] = "denis.stalker.h3q.com:6969";
+	$udp_patterns[] = "tracker.ccc.de";
 	$udp_patterns[] = "tracker.publicbt.com";
 	$udp_patterns[] = "inferno.demonoid.com";
 	$udp_patterns[] = "tracker.torrentbox.com:2710";

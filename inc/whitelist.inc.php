@@ -55,6 +55,7 @@
 	$tr_no_port[] = 'p://www.zen7.ph/track/announce.php';
 	$tr_no_port[] = 'p://pow7.com/announce';
 	$tr_no_port[] = 'p://tracker.publicbt.com/announce';
+	$tr_no_port[] = 'p://tracker.ccc.de/announce';
 	$tr_no_port[] = 'p://360.kicks-ass.org/announce.php';
 	$tr_no_port[] = 'p://alt.bitworld.to/announce.php';
 	$tr_no_port[] = 'p://anvilofsound.com/announce';

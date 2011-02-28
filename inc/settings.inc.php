@@ -15,12 +15,10 @@
 	
 		// list of trackers that will always exist in torrent
 		'trackers' => array(
-			'http://tracker.openbittorrent.com/announce',
 			'udp://tracker.openbittorrent.com:80/announce',
-			'http://tracker.publicbt.com/announce',
 			'udp://tracker.publicbt.com:80/announce',
-			'http://denis.stalker.h3q.com:6969/announce',
-			'udp://denis.stalker.h3q.com:6969/announce',
+			'udp://tracker.istole.it:80/announce',
+			'udp://tracker.ccc.de:80/announce',
 		),
 		
 		// used for link generation
