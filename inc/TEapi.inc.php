@@ -25,7 +25,7 @@
 			try
 			{
 				$this->torrent = new BEncode();
-				$this->torrent->decode( $data, true );
+				$this->torrent->decode( $data );
 			}
 			catch( Exception $e )
 			{
@@ -304,7 +304,7 @@
 		// Bencode the torrent
 		public function bencode()
 		{
-			return $this->torrent->encode();
+			return $this->torrent->encode( null );
 		}
 
 		// Return the torrent's hash
@@ -425,7 +425,7 @@
 			return count( $this->__data );
 		}
 
-		public function decode( $data, $usegmp = false, $strict = false )
+		public function decode( $data, $usegmp = true, $strict = false )
 		{
 			$stack = array();
 			$offset = 0;
@@ -627,7 +627,7 @@
 			throw new Exception( "Unexpected end of bencoded data" );
 		}
 
-		function encode( $var = null, $autonumbers = true )
+		function encode( $var = null, $autonumbers = false )
 		{
 			if( $var === null )
 			{
@@ -665,7 +665,7 @@
 					$text = 'd';
 					foreach( $var as $key => $val )
 					{
-						$text .= strlen( $key ) . ':' . $key . $this->encode( $val );
+						$text .= strlen( $key ) . ':' . $key . $this->encode( $val, $autonumbers );
 					}
 					return $text . 'e';
 				}
@@ -674,7 +674,7 @@
 					$text = 'l';
 					foreach( $var as $val )
 					{
-						$text .= $this->encode( $val );
+						$text .= $this->encode( $val, $autonumbers );
 					}
 					return $text . 'e';
 				}
