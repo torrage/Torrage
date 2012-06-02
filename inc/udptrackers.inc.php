@@ -7,7 +7,6 @@
 	$udp_patterns[] = "tracker.torrentbox.com:2710";
 	$udp_patterns[] = "tracker.istole.it";
 	$udp_patterns[] = "tntvillage.org";
-	$udp_patterns[] = "colombo-bt.org";
 	$udp_patterns[] = "www.lamsoft.net:6969";
 	$udp_patterns[] = "bt.cngba.com:6969";
 	$udp_patterns[] = "mongo56.org";
